@@ -1,0 +1,42 @@
+pipeline {
+    environment {
+       artifactory = "{{ artifactory_url }}"
+       artifactoryCredential = "{{ artifactory_cred }}"
+       artifactory_password = credentials('{{ artifactory_pass }}')
+       artifactory_user = '{{ artifactory_user }}'
+    }
+   agent any
+
+   stages {
+      stage('Clone repo') {
+          steps {
+              script {
+                  git branch: "master",
+                      credentialsId: '{{ docker_repo_id }}',
+                      url: '{{ docker_repo }}'
+              }
+          }
+      }
+      stage('Delete Jmeter job') {
+          steps {
+              catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+              
+                  script {
+                      dir("${WORKSPACE}/k8sjob") {
+                          sh "kubectl delete job jmeter -n jmeter"
+                      }
+                  }
+              }
+          }
+      }
+      stage('Run Jmeter image') {
+          steps {
+              script {
+                  dir("${WORKSPACE}/k8sjob") {
+                      sh "kubectl create -f jmeterjob.yml"
+                  }
+              }
+          }
+      }
+   }
+} 

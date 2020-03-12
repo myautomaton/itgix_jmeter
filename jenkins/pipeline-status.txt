@@ -1,0 +1,30 @@
+pipeline {
+    environment {
+       artifactory = "{{ artifactory_url }}"
+       artifactoryCredential = "{{ artifactory_cred }}"
+       artifactory_password = credentials('{{ artifactory_pass }}')
+       artifactory_user = '{{ artifactory_user }}'
+    }
+   agent any
+
+   stages {
+      stage('Describe POD') {
+          steps {
+                script {
+                    dir("${WORKSPACE}") {
+                        sh "kubectl describe pod \$(kubectl get pods -n jmeter | grep jmeter | awk '{print \$1}') -n jmeter"
+                    }
+                }
+          }
+      }
+      stage('POD Log') {
+          steps {
+              script {
+                  dir("${WORKSPACE}") {
+                      sh "kubectl logs -f \$(kubectl get pods -n jmeter | grep jmeter | awk '{print \$1}') -n jmeter"
+                  }
+              }
+          }
+      }
+   }
+}
