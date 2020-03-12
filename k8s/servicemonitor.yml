@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: jmeter-exporter
+    release: prometheus
+  name: jmeter-exporter
+  namespace: monitoring
+spec:
+  endpoints:
+  - honorLabels: true
+    interval: 1s
+    path: /metrics
+    port: web
+    scheme: http
+    scrapeTimeout: 1s
+  jobLabel: jmeter
+  namespaceSelector:
+    matchNames:
+    - jmeter
+  selector:
+    matchLabels:
+      app: jmeter

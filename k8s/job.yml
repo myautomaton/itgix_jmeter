@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jmeter
+  namespace: jmeter
+  labels:
+    app: jmeter-app
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: artifactory
+      containers:
+      - name: jmeter
+        image: {{ docker_repo }}/jmeter:latest
+        command: ["/bin/bash","-c","echo -e 'StrictHostKeyChecking no\n' >> ~/.ssh/config; git clone -b containerization {{ git_repo }} && /opt/scripts/runjmeter.sh"]
+      restartPolicy: Never 

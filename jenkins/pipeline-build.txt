@@ -1,0 +1,62 @@
+pipeline {
+    environment {
+       artifactory = "{{ artifactory_url }}"
+       artifactoryCredential = "{{ artifactory_cred }}"
+       artifactory_password = credentials('{{ artifactory_pass }}')
+       artifactory_user = '{{ artifactory_user }}'
+    }
+   agent any
+
+   stages {
+      stage('Clone repo') {
+          steps {
+              script {
+                  git branch: "master",
+                      credentialsId: '{{ docker_repo_id }}',
+                      url: '{{ docker_repo }}'
+              }
+          }
+      }
+      stage('Build Jmeter image') {
+          steps {
+              script {
+                  dir("${WORKSPACE}/JmeterDocker") {
+                      sh "printenv"
+                      sh "docker build . -t jmeter:latest"
+                  }
+              }
+          }
+      }
+      stage ('Artifactory configuration') {
+          steps {
+                rtServer (
+                  id: "ARTIFACTORY_SERVER",
+                  url: "SERVER_URL",
+                  credentialsId: "CREDENTIALS"
+                )
+          }
+      }
+      stage('Tag and push to artifactory') {
+         steps {
+            script {
+                def registry_path = "{{ artifactory_registry }}"
+                docker.withRegistry( artifactory, artifactoryCredential ) {
+                    sh """
+                       docker tag jmeter:latest ${registry_path}jmeter:latest --build-arg SSH_KEY="$(cat /apps/jenkins/id_rsa)"
+                       docker push ${registry_path}jmeter:latest
+                    """
+                }
+            }
+        }
+     }
+     stage('clean up docker images') {
+         steps{
+             script{
+                 sh """
+                  docker image prune -f
+                 """
+             }
+         }
+     }
+   }
+}
